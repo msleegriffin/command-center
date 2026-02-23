@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Divorce Docket — Content Command Center</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0F1E2E; font-family: Georgia, 'Times New Roman', serif; color: #E8E0D0; }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+  input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.7); }
+  select option { background: #0F1E2E; color: #E8E0D0; }
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #0F1E2E; } ::-webkit-scrollbar-thumb { background: #2A3F55; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const PLATFORMS = ["YouTube", "Instagram", "TikTok"];
+const STATUSES = ["Raw Idea", "Ready to Film", "Filmed", "Editing", "Posted"];
+const STATUS_COLORS = { "Raw Idea": "#8B7355", "Ready to Film": "#4A6741", "Filmed": "#2C5F8A", "Editing": "#7A5C8A", "Posted": "#2A6B4F" };
+const PLATFORM_COLORS = { YouTube: "#AA4A4A", Instagram: "#8A5A9A", TikTok: "#3A8A8A" };
+
+const emptyPublish = () => ({ YouTube: { date: "", time: "", reason: "" }, Instagram: { date: "", time: "", reason: "" }, TikTok: { date: "", time: "", reason: "" } });
+const emptyIdea = () => ({ id: Date.now(), hook: "", topic: "", contentType: "", platforms: [], status: "Raw Idea", filmDate: "", driveLink: "", notes: "", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: new Date().toLocaleDateString() });
+
+const PRELOADED = [
+  { id: 1001, topic: "Just Been Served", hook: "If you've just been served divorce papers, listen to this.", contentType: "Strategy Tips", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Don't make panic decisions. People who do best pause, breathe, and prepare strategically.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+  { id: 1002, topic: "Biggest Mistake People Make", hook: "The #1 mistake I see people make in the first week of divorce.", contentType: "Strategy Tips", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Oversharing on social media. Everything you post can be used against you.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+  { id: 1003, topic: "Stop Taking the Bait", hook: "STOP taking the bait. Every emotional response is a win for your ex.", contentType: "Strategy Tips", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Grey rock method. Don't engage emotionally. Respond to logistics only.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+  { id: 1004, topic: "First 72 Hours After Being Served", hook: "The first 72 hours after being served — here's what matters.", contentType: "Strategy Tips", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Maintain status quo: same school, same routines, same housing. Court preserves stability.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+  { id: 1005, topic: "Evidence Beats Emotion", hook: "It's not about who yells louder — it's about who shows consistent facts.", contentType: "Strategy Tips", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Judges reward clarity, organization, calm. You win by documenting, not reacting.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+  { id: 1006, topic: "Overwhelmed? Start Here", hook: "Overwhelmed by your divorce? Start here.", contentType: "Motivation", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Overwhelm makes people freeze. One stabilizing step shifts everything. Point to free guide.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+  { id: 1007, topic: "Your Lawyer is NOT Your Therapist", hook: "Your lawyer is NOT your therapist. Every emotional email costs you $250.", contentType: "Strategy Tips", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Therapist = feelings. Lawyer = law. Email format: Action Required. Fact, Date, Consequence.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+  { id: 1008, topic: "I Won't Teach You Revenge", hook: "I won't teach you how to destroy your ex in court. Here's why.", contentType: "Motivation", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Judges reward calm, organized, consistent people. Brand positioning.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+  { id: 1009, topic: "5 Courtroom Mistakes I Saw in 27 Years", hook: "After 27 years in family law, here are the 5 mistakes that cost people everything.", contentType: "Strategy Tips", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Week 2 content. High value credibility builder.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+  { id: 1010, topic: "Communication Scripts That Work", hook: "Stop winging it. Here are the exact scripts I gave my clients.", contentType: "Process/How-To", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Week 2 content. Practical, high shareability.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+  { id: 1011, topic: "Financial Protection Tactics", hook: "The $100 mistake you're probably making right now in your divorce.", contentType: "Strategy Tips", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Week 2 content. Establishing your own credit.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+  { id: 1012, topic: "What to Document in Your Divorce", hook: "Date. Time. Consequence. That's the only documentation formula you need.", contentType: "Process/How-To", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Week 2 content. Evidence formula.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+  { id: 1013, topic: "Divorce is an Audit of Your Life", hook: "Divorce is essentially a full financial audit. Here's what they'll look for.", contentType: "Strategy Tips", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Week 2 content. 3 years of docs, bank statements, tax returns.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+  { id: 1014, topic: "Co-Parenting Frameworks", hook: "Co-parenting with someone you can't stand? Here's the framework that works.", contentType: "Strategy Tips", platforms: ["YouTube","Instagram","TikTok"], status: "Ready to Film", filmDate: "2026-02-23", driveLink: "", notes: "Week 2 content. Business relationship model for co-parenting.", myThoughts: "", script: "", publish: emptyPublish(), hashtags: { YouTube: "", Instagram: "", TikTok: "" }, createdAt: "2/23/2026" },
+];
+
+const AI_SYSTEM = `You are working for The Divorce Docket, a divorce coaching and education brand by Lee Griffin — a former family law attorney with 27 years of experience. Her audience is primarily women ages 30-55 going through divorce. Her tone is direct, empowering, and no-nonsense.`;
+
+async function callClaude(prompt) {
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, messages: [{ role: "user", content: AI_SYSTEM + "\n\n" + prompt }] })
+  });
+  const data = await resp.json();
+  return data.content.map(c => c.text || "").join("");
+}
+
+function App() {
+  const [ideas, setIdeas] = useState([]);
+  const [activeTab, setActiveTab] = useState("database");
+  const [riffText, setRiffText] = useState("");
+  const [riffProcessing, setRiffProcessing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [expandedScript, setExpandedScript] = useState(null);
+  const [expandedPublish, setExpandedPublish] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [statusMsg, setStatusMsg] = useState("");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newIdea, setNewIdea] = useState(emptyIdea());
+  const [generatingScript, setGeneratingScript] = useState(null);
+  const [generatingHashtags, setGeneratingHashtags] = useState(null);
+  const [generatingTimes, setGeneratingTimes] = useState(null);
+  const csvImportRef = useRef();
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("dd-ideas-v2");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const migrated = parsed.map(i => ({ ...emptyIdea(), ...i, publish: i.publish || emptyPublish(), hashtags: i.hashtags || { YouTube: "", Instagram: "", TikTok: "" } }));
+        setIdeas(migrated.length ? migrated : PRELOADED);
+      } else {
+        setIdeas(PRELOADED);
+        localStorage.setItem("dd-ideas-v2", JSON.stringify(PRELOADED));
+      }
+    } catch (e) { setIdeas(PRELOADED); }
+  }, []);
+
+  const save = (u) => { try { localStorage.setItem("dd-ideas-v2", JSON.stringify(u)); } catch (e) {} };
+  const notify = (msg) => { setStatusMsg(msg); setTimeout(() => setStatusMsg(""), 3500); };
+  const addIdea = (idea) => { const u = [{ ...idea, id: Date.now() }, ...ideas]; setIdeas(u); save(u); };
+  const updateIdea = (id, field, value) => { const u = ideas.map(i => i.id === id ? { ...i, [field]: value } : i); setIdeas(u); save(u); };
+  const updatePublish = (id, platform, key, value) => { const u = ideas.map(i => { if (i.id !== id) return i; return { ...i, publish: { ...i.publish, [platform]: { ...i.publish[platform], [key]: value } } }; }); setIdeas(u); save(u); };
+  const updateHashtags = (id, platform, value) => { const u = ideas.map(i => { if (i.id !== id) return i; return { ...i, hashtags: { ...i.hashtags, [platform]: value } }; }); setIdeas(u); save(u); };
+  const deleteIdea = (id) => { const u = ideas.filter(i => i.id !== id); setIdeas(u); save(u); };
+  const togglePlatform = (idea, p) => { const pl = idea.platforms.includes(p) ? idea.platforms.filter(x => x !== p) : [...idea.platforms, p]; updateIdea(idea.id, "platforms", pl); };
+
+  const exportCSV = () => {
+    const headers = ["Topic","Hook","Content Type","Platforms","Status","Film Date","Drive Link","Notes","My Thoughts","Script","YT Date","YT Time","YT Hashtags","IG Date","IG Time","IG Hashtags","TT Date","TT Time","TT Hashtags","Created"];
+    const rows = ideas.map(i => { const p = i.publish || emptyPublish(); const h = i.hashtags || {}; return [i.topic,i.hook,i.contentType,i.platforms.join("|"),i.status,i.filmDate,i.driveLink,i.notes,i.myThoughts||"",i.script||"",p.YouTube?.date||"",p.YouTube?.time||"",h.YouTube||"",p.Instagram?.date||"",p.Instagram?.time||"",h.Instagram||"",p.TikTok?.date||"",p.TikTok?.time||"",h.TikTok||"",i.createdAt].map(v => '"' + (v||"").replace(/"/g,'""') + '"').join(","); });
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "divorce-docket-content.csv"; a.click();
+    URL.revokeObjectURL(url); notify("✅ CSV downloaded!");
+  };
+
+  const importCSV = (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const lines = ev.target.result.split("\n").filter(l => l.trim());
+        const headers = lines[0].split(",").map(h => h.replace(/"/g,"").trim().toLowerCase());
+        const imported = lines.slice(1).map((line, idx) => { const vals = line.match(/(".*?"|[^",\n]+)/g) || []; const clean = vals.map(v => v.replace(/^"|"$/g,"").replace(/""/g,'"').trim()); const get = (key) => clean[headers.indexOf(key)] || ""; return { id: Date.now()+idx, topic: get("topic"), hook: get("hook"), contentType: get("content type"), platforms: get("platforms") ? get("platforms").split("|") : [], status: get("status")||"Raw Idea", filmDate: get("film date"), driveLink: get("drive link"), notes: get("notes"), myThoughts: get("my thoughts"), script: get("script"), publish: { YouTube: {date:get("yt date"),time:get("yt time"),reason:""}, Instagram: {date:get("ig date"),time:get("ig time"),reason:""}, TikTok: {date:get("tt date"),time:get("tt time"),reason:""} }, hashtags: {YouTube:get("yt hashtags"),Instagram:get("ig hashtags"),TikTok:get("tt hashtags")}, createdAt: get("created")||new Date().toLocaleDateString() }; }).filter(i => i.topic);
+        const updated = [...imported, ...ideas]; setIdeas(updated); save(updated);
+        notify("✅ Imported " + imported.length + " ideas!");
+      } catch (err) { notify("❌ Import failed. Check CSV format."); }
+    };
+    reader.readAsText(file); e.target.value = "";
+  };
+
+  const generateScript = async (idea) => {
+    setGeneratingScript(idea.id);
+    try {
+      const script = await callClaude(`Write a video script for Lee Griffin. Voice: direct, authoritative, warm but no-nonsense, short punchy sentences, real talk, first person.\n\nTopic: ${idea.topic}\nHook: ${idea.hook}\nNotes: ${idea.notes}\n${idea.myThoughts ? "Lee's thoughts to include verbatim: " + idea.myThoughts : ""}\n\nStructure: HOOK (2-3 sentences expanding the opening) → BODY (3-4 key points) → CTA (follow or free checklist at thedivorcedocket.com). Natural speech, 60-90 seconds, no bullet points.`);
+      updateIdea(idea.id, "script", script); setExpandedScript(idea.id); notify("✨ Script written in your voice!");
+    } catch (e) { notify("Something went wrong. Try again."); }
+    setGeneratingScript(null);
+  };
+
+  const generateHashtags = async (idea) => {
+    setGeneratingHashtags(idea.id);
+    try {
+      const result = await callClaude(`You are a world-class social media strategist specializing in viral growth for coaches and legal educators. Expert in 2025 platform algorithms:\n\nTIKTOK: 4-5 hashtags, niche-specific (100K-2M range), avoid mega tags over 1B\nINSTAGRAM: 10-15 hashtags, mix of broad/mid/niche/branded, include # symbol\nYOUTUBE: 10-15 tags, no # symbol, mix of broad and specific search terms\n\nTopic: ${idea.topic}\nHook: ${idea.hook}\nType: ${idea.contentType}\nBrand: The Divorce Docket — divorce coaching for women\n\nReturn ONLY valid JSON: {"YouTube": "tag1, tag2...", "Instagram": "#tag1 #tag2...", "TikTok": "#tag1 #tag2..."}`);
+      const parsed = JSON.parse(result.replace(/```json|```/g,"").trim());
+      const u = ideas.map(i => i.id === idea.id ? { ...i, hashtags: { YouTube: parsed.YouTube||"", Instagram: parsed.Instagram||"", TikTok: parsed.TikTok||"" } } : i);
+      setIdeas(u); save(u); setExpandedPublish(idea.id); notify("✨ Hashtags generated for all 3 platforms!");
+    } catch (e) { notify("Something went wrong. Try again."); }
+    setGeneratingHashtags(null);
+  };
+
+  const suggestPostTimes = async (idea) => {
+    setGeneratingTimes(idea.id);
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const result = await callClaude(`You are a social media timing expert. Suggest best publish date/time this week for each platform.\n\nContent: "${idea.topic}" — ${idea.contentType} for The Divorce Docket\nAudience: Women 30-55 going through divorce, US Central time zone\nToday: ${today}\n\nPeak times (CT): TikTok: Tue-Fri 7-9am, 12-3pm, 7-9pm | Instagram Reels: Tue-Thu 11am-1pm, 7-9pm | YouTube Shorts: Thu-Sat 3-5pm or any day 12pm\n\nReturn ONLY valid JSON: {"YouTube": {"date": "YYYY-MM-DD", "time": "HH:MM", "reason": "brief reason"}, "Instagram": {"date": "YYYY-MM-DD", "time": "HH:MM", "reason": "brief reason"}, "TikTok": {"date": "YYYY-MM-DD", "time": "HH:MM", "reason": "brief reason"}}`);
+      const parsed = JSON.parse(result.replace(/```json|```/g,"").trim());
+      const u = ideas.map(i => { if (i.id !== idea.id) return i; return { ...i, publish: { YouTube: {date:parsed.YouTube?.date||"",time:parsed.YouTube?.time||"",reason:parsed.YouTube?.reason||""}, Instagram: {date:parsed.Instagram?.date||"",time:parsed.Instagram?.time||"",reason:parsed.Instagram?.reason||""}, TikTok: {date:parsed.TikTok?.date||"",time:parsed.TikTok?.time||"",reason:parsed.TikTok?.reason||""} } }; });
+      setIdeas(u); save(u); setExpandedPublish(idea.id); notify("✨ Best post times suggested!");
+    } catch (e) { notify("Something went wrong. Try again."); }
+    setGeneratingTimes(null);
+  };
+
+  const processRiff = async () => {
+    if (!riffText.trim()) return;
+    setRiffProcessing(true);
+    try {
+      const text = await callClaude('Lee\'s raw riff: "' + riffText + '"\n\nReturn ONLY valid JSON: {"hook":"compelling 1-2 sentence hook","topic":"short title 5-8 words","contentType":"one of: Child Support, Strategy Tips, Q&A, Story/Case Study, Motivation, Process/How-To, Other","platforms":["YouTube","Instagram","TikTok"],"notes":"key points 2-3 sentences","myThoughts":"preserve Lee\'s key phrases verbatim"}');
+      const parsed = JSON.parse(text.replace(/```json|```/g,"").trim());
+      addIdea({ ...emptyIdea(), ...parsed, status: "Raw Idea" });
+      setRiffText(""); setActiveTab("database"); notify("✨ Raw idea captured and saved!");
+    } catch (e) { notify("Something went wrong. Try again."); }
+    setRiffProcessing(false);
+  };
+
+  const filtered = filterStatus === "All" ? ideas : ideas.filter(i => i.status === filterStatus);
+  const rawCount = ideas.filter(i => i.status === "Raw Idea").length;
+  const readyCount = ideas.filter(i => i.status === "Ready to Film").length;
+  const postedCount = ideas.filter(i => i.status === "Posted").length;
+
+  const IS = { width: "100%", background: "#0F1E2E", border: "1px solid #2A3F55", borderRadius: "6px", color: "#E8E0D0", padding: "8px 12px", fontSize: "13px", boxSizing: "border-box", fontFamily: "Georgia,serif" };
+  const LS = { display: "block", fontSize: "10px", color: "#C4A882", letterSpacing: "2px", textTransform: "uppercase", marginBottom: "5px" };
+  const BTN = (extra) => ({ background: "transparent", border: "1px solid #3A5A7A", borderRadius: "6px", color: "#7A9AB8", padding: "5px 12px", fontSize: "11px", cursor: "pointer", ...(extra||{}) });
+
+  const fmtTime = (t) => { if (!t) return ""; const [h,m] = t.split(":"); const hr = parseInt(h); return (hr > 12 ? hr-12 : hr||12) + ":" + m + " " + (hr >= 12 ? "PM" : "AM"); };
+  const fmtDate = (d) => { if (!d) return ""; return new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}); };
+
+  return (
+    <div style={{minHeight:"100vh",color:"#E8E0D0"}}>
+      {/* HEADER */}
+      <div style={{background:"linear-gradient(90deg,#0F1E2E,#1E3A5F)",borderBottom:"1px solid #C4A882",padding:"20px 28px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:"12px"}}>
+        <div>
+          <div style={{fontSize:"11px",letterSpacing:"4px",color:"#C4A882",textTransform:"uppercase",marginBottom:"4px"}}>The Divorce Docket</div>
+          <h1 style={{fontSize:"22px",fontWeight:"normal",color:"#F0EAE0",letterSpacing:"1px"}}>Content Command Center</h1>
+        </div>
+        <div style={{display:"flex",gap:"20px",flexWrap:"wrap"}}>
+          {[{label:"Raw Ideas",value:rawCount,color:"#C4A882"},{label:"Ready to Film",value:readyCount,color:"#6B9A6B"},{label:"Posted",value:postedCount,color:"#4A7FAA"}].map(s=>(
+            <div key={s.label} style={{textAlign:"center"}}>
+              <div style={{fontSize:"24px",fontWeight:"bold",color:s.color}}>{s.value}</div>
+              <div style={{fontSize:"10px",letterSpacing:"2px",color:"#A09080",textTransform:"uppercase"}}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* TABS */}
+      <div style={{display:"flex",borderBottom:"1px solid #2A3F55",background:"#0D1A27"}}>
+        {[{id:"riff",label:"🎙️ Capture Riff"},{id:"database",label:"📋 Content Database"},{id:"schedule",label:"📅 Film Schedule"}].map(t=>(
+          <button key={t.id} onClick={()=>setActiveTab(t.id)} style={{background:activeTab===t.id?"#1E3A5F":"transparent",border:"none",borderBottom:activeTab===t.id?"2px solid #C4A882":"2px solid transparent",color:activeTab===t.id?"#C4A882":"#7A8A9A",padding:"14px 20px",cursor:"pointer",fontSize:"13px"}}>{t.label}</button>
+        ))}
+      </div>
+
+      <div style={{padding:"24px 28px",background:"linear-gradient(135deg,#0F1E2E 0%,#1a2d42 50%,#0F1E2E 100%)",minHeight:"calc(100vh - 120px)"}}>
+        {statusMsg && <div style={{background:"#1A3A2A",border:"1px solid #4A8A5A",borderRadius:"8px",padding:"12px 16px",fontSize:"13px",color:"#8AD4A8",marginBottom:"16px"}}>{statusMsg}</div>}
+
+        {/* RIFF TAB */}
+        {activeTab==="riff" && (
+          <div style={{maxWidth:"700px"}}>
+            <div style={{background:"linear-gradient(135deg,#1A2E42,#1E3A5F)",border:"1px solid #C4A882",borderRadius:"12px",padding:"28px"}}>
+              <h2 style={{marginBottom:"8px",fontSize:"18px",fontWeight:"normal",color:"#C4A882"}}>🎙️ Drop Your Raw Idea Here</h2>
+              <p style={{marginBottom:"20px",fontSize:"13px",color:"#9AABB8",lineHeight:"1.6"}}>Just riff. Don't overthink it. AI captures your hook, topic, and saves your own words for the script.</p>
+              <textarea value={riffText} onChange={e=>setRiffText(e.target.value)} placeholder="Example: 'Okay so I had a client whose ex was self-employed and hiding income and nobody told her what she could actually do...'" style={{...IS,minHeight:"160px",resize:"vertical"}} />
+              <button onClick={processRiff} disabled={riffProcessing||!riffText.trim()} style={{marginTop:"16px",background:riffProcessing?"#2A4A5A":"linear-gradient(135deg,#C4A882,#A08860)",border:"none",borderRadius:"8px",color:riffProcessing?"#6A8A9A":"#0F1E2E",padding:"12px 28px",fontSize:"14px",fontWeight:"bold",cursor:riffProcessing?"not-allowed":"pointer"}}>
+                {riffProcessing?"✨ Processing...":"✨ Capture & Save to Database"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* DATABASE TAB */}
+        {activeTab==="database" && (
+          <div>
+            <div style={{display:"flex",gap:"8px",marginBottom:"20px",flexWrap:"wrap",alignItems:"center"}}>
+              <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+                {["All",...STATUSES].map(s=>(
+                  <button key={s} onClick={()=>setFilterStatus(s)} style={{background:filterStatus===s?(STATUS_COLORS[s]||"#C4A882"):"#1A2E42",border:"1px solid "+(filterStatus===s?"transparent":"#2A3F55"),borderRadius:"20px",color:filterStatus===s?"#fff":"#9AABB8",padding:"6px 14px",fontSize:"11px",cursor:"pointer"}}>{s}</button>
+                ))}
+              </div>
+              <div style={{display:"flex",gap:"8px",marginLeft:"auto",flexWrap:"wrap"}}>
+                <input ref={csvImportRef} type="file" accept=".csv" onChange={importCSV} style={{display:"none"}} />
+                <button onClick={()=>csvImportRef.current.click()} style={{...BTN(),borderColor:"#4A7FAA",color:"#4A7FAA"}}>⬆️ Import CSV</button>
+                <button onClick={exportCSV} style={{...BTN(),borderColor:"#6B9A6B",color:"#6B9A6B"}}>⬇️ Export CSV</button>
+                <button onClick={()=>{setNewIdea(emptyIdea());setShowAddForm(!showAddForm);}} style={{...BTN(),borderColor:"#C4A882",color:"#C4A882"}}>+ Add Manually</button>
+              </div>
+            </div>
+
+            {showAddForm && (
+              <div style={{background:"#1A2E42",border:"1px solid #C4A882",borderRadius:"12px",padding:"20px",marginBottom:"20px"}}>
+                <h3 style={{marginBottom:"16px",fontSize:"14px",color:"#C4A882",letterSpacing:"2px",textTransform:"uppercase"}}>New Content Idea</h3>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
+                  {[{label:"Hook",field:"hook",full:true},{label:"Topic Title",field:"topic"},{label:"Drive Link",field:"driveLink"},{label:"Notes",field:"notes",full:true},{label:"My Thoughts",field:"myThoughts",full:true}].map(f=>(
+                    <div key={f.field} style={{gridColumn:f.full?"1/-1":"auto"}}>
+                      <label style={LS}>{f.label}</label>
+                      <input value={newIdea[f.field]} onChange={e=>setNewIdea({...newIdea,[f.field]:e.target.value})} style={IS} />
+                    </div>
+                  ))}
+                  <div><label style={LS}>Film Date</label><input type="date" value={newIdea.filmDate} onChange={e=>setNewIdea({...newIdea,filmDate:e.target.value})} style={IS} /></div>
+                  <div><label style={LS}>Status</label><select value={newIdea.status} onChange={e=>setNewIdea({...newIdea,status:e.target.value})} style={IS}>{STATUSES.map(s=><option key={s}>{s}</option>)}</select></div>
+                  <div style={{gridColumn:"1/-1"}}>
+                    <label style={LS}>Platforms</label>
+                    <div style={{display:"flex",gap:"8px"}}>
+                      {PLATFORMS.map(p=><button key={p} onClick={()=>{const pl=newIdea.platforms.includes(p)?newIdea.platforms.filter(x=>x!==p):[...newIdea.platforms,p];setNewIdea({...newIdea,platforms:pl});}} style={{background:newIdea.platforms.includes(p)?"#C4A882":"#0F1E2E",border:"1px solid #C4A882",borderRadius:"20px",color:newIdea.platforms.includes(p)?"#0F1E2E":"#C4A882",padding:"6px 14px",fontSize:"12px",cursor:"pointer"}}>{p}</button>)}
+                    </div>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:"10px",marginTop:"16px"}}>
+                  <button onClick={()=>{addIdea(newIdea);setShowAddForm(false);setNewIdea(emptyIdea());}} style={{background:"#C4A882",border:"none",borderRadius:"6px",color:"#0F1E2E",padding:"10px 20px",fontSize:"13px",fontWeight:"bold",cursor:"pointer"}}>Save</button>
+                  <button onClick={()=>setShowAddForm(false)} style={BTN()}>Cancel</button>
+                </div>
+              </div>
+            )}
+
+            {filtered.length===0 ? (
+              <div style={{textAlign:"center",padding:"60px",color:"#4A6A8A"}}><div style={{fontSize:"40px",marginBottom:"12px"}}>🎙️</div><div>No ideas yet — go riff!</div></div>
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
+                {filtered.map(idea=>(
+                  <div key={idea.id} style={{background:"linear-gradient(135deg,#1A2E42,#162638)",border:"1px solid #2A3F55",borderLeft:"3px solid "+(STATUS_COLORS[idea.status]||"#C4A882"),borderRadius:"10px",padding:"18px 20px"}}>
+
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"10px",gap:"12px"}}>
+                      <div style={{flex:1}}>
+                        {editingId===idea.id?<input value={idea.topic} onChange={e=>updateIdea(idea.id,"topic",e.target.value)} style={{...IS,fontSize:"15px",marginBottom:"6px"}} />:<div style={{fontSize:"15px",color:"#F0EAE0",marginBottom:"4px"}}>{idea.topic||"Untitled"}</div>}
+                        {editingId===idea.id?<input value={idea.hook} onChange={e=>updateIdea(idea.id,"hook",e.target.value)} style={IS} />:<div style={{fontSize:"12px",color:"#C4A882",fontStyle:"italic"}}>{idea.hook}</div>}
+                      </div>
+                      <div style={{display:"flex",gap:"6px",flexShrink:0}}>
+                        <button onClick={()=>setEditingId(editingId===idea.id?null:idea.id)} style={BTN()}>{editingId===idea.id?"Done":"Edit"}</button>
+                        <button onClick={()=>deleteIdea(idea.id)} style={{...BTN(),borderColor:"#5A2A2A",color:"#8A4A4A"}}>✕</button>
+                      </div>
+                    </div>
+
+                    <div style={{display:"flex",gap:"8px",flexWrap:"wrap",alignItems:"center",marginBottom:"12px"}}>
+                      <select value={idea.status} onChange={e=>updateIdea(idea.id,"status",e.target.value)} style={{background:STATUS_COLORS[idea.status]+"22",border:"1px solid "+STATUS_COLORS[idea.status],borderRadius:"20px",color:STATUS_COLORS[idea.status],padding:"4px 10px",fontSize:"11px",cursor:"pointer"}}>
+                        {STATUSES.map(s=><option key={s}>{s}</option>)}
+                      </select>
+                      {PLATFORMS.map(p=><button key={p} onClick={()=>togglePlatform(idea,p)} style={{background:idea.platforms.includes(p)?PLATFORM_COLORS[p]+"44":"transparent",border:"1px solid "+(idea.platforms.includes(p)?PLATFORM_COLORS[p]:"#2A3F55"),borderRadius:"20px",color:idea.platforms.includes(p)?"#D0C0E0":"#4A6A8A",padding:"3px 10px",fontSize:"10px",cursor:"pointer"}}>{p}</button>)}
+                      <input type="date" value={idea.filmDate} onChange={e=>updateIdea(idea.id,"filmDate",e.target.value)} style={{background:"transparent",border:"none",color:idea.filmDate?"#C4A882":"#4A6A8A",fontSize:"11px",cursor:"pointer"}} />
+                      {editingId===idea.id?<input value={idea.driveLink} onChange={e=>updateIdea(idea.id,"driveLink",e.target.value)} placeholder="Drive link" style={{background:"#0F1E2E",border:"1px solid #2A3F55",borderRadius:"4px",color:"#E8E0D0",padding:"4px 8px",fontSize:"11px",width:"150px"}} />:idea.driveLink?<a href={idea.driveLink} target="_blank" rel="noreferrer" style={{fontSize:"11px",color:"#6ABAAA",textDecoration:"none"}}>📁 Drive</a>:null}
+                      <span style={{fontSize:"10px",color:"#3A5A7A",marginLeft:"auto"}}>{idea.createdAt}</span>
+                    </div>
+
+                    {(idea.notes||editingId===idea.id)&&(
+                      <div style={{marginBottom:"12px",paddingBottom:"12px",borderBottom:"1px solid #1E3A55"}}>
+                        <label style={LS}>Notes</label>
+                        {editingId===idea.id?<textarea value={idea.notes} onChange={e=>updateIdea(idea.id,"notes",e.target.value)} style={{...IS,minHeight:"50px",resize:"vertical"}} />:<div style={{fontSize:"12px",color:"#9AABB8",lineHeight:"1.6"}}>{idea.notes}</div>}
+                      </div>
+                    )}
+
+                    <div style={{marginBottom:"12px"}}>
+                      <label style={LS}>My Thoughts <span style={{color:"#5A7A8A",textTransform:"none",letterSpacing:0,fontWeight:"normal"}}>— your angle before building the script</span></label>
+                      <textarea value={idea.myThoughts||""} onChange={e=>updateIdea(idea.id,"myThoughts",e.target.value)} placeholder="Your personal stories, key phrases, bullet points of what you want to say..." style={{...IS,minHeight:"70px",resize:"vertical"}} />
+                    </div>
+
+                    <div style={{marginBottom:"12px",paddingBottom:"12px",borderBottom:"1px solid #1E3A55"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px",flexWrap:"wrap"}}>
+                        <label style={{...LS,margin:0}}>Script</label>
+                        <button onClick={()=>generateScript(idea)} disabled={generatingScript===idea.id} style={{background:generatingScript===idea.id?"#1A2E42":"linear-gradient(135deg,#4A6741,#3A5531)",border:"none",borderRadius:"6px",color:generatingScript===idea.id?"#5A8A5A":"#B0D4A0",padding:"5px 14px",fontSize:"11px",cursor:generatingScript===idea.id?"not-allowed":"pointer"}}>
+                          {generatingScript===idea.id?"✨ Writing...":idea.script?"✨ Regenerate":"✨ Build My Script"}
+                        </button>
+                        {idea.script&&<React.Fragment>
+                          <button onClick={()=>setExpandedScript(expandedScript===idea.id?null:idea.id)} style={BTN()}>{expandedScript===idea.id?"Hide":"View Script"}</button>
+                          <button onClick={()=>{navigator.clipboard.writeText(idea.script);notify("📋 Script copied!");}} style={BTN()}>Copy</button>
+                        </React.Fragment>}
+                      </div>
+                      {!idea.script&&<div style={{fontSize:"12px",color:"#4A6A8A",fontStyle:"italic"}}>Add your thoughts above, then hit "Build My Script."</div>}
+                      {idea.script&&expandedScript!==idea.id&&<div style={{fontSize:"12px",color:"#4A8A5A"}}>✅ Script ready — click View to read or edit.</div>}
+                      {idea.script&&expandedScript===idea.id&&(
+                        <div style={{background:"#0F1E2E",border:"1px solid #2A4A3A",borderRadius:"8px",padding:"16px",marginTop:"8px"}}>
+                          <textarea value={idea.script} onChange={e=>updateIdea(idea.id,"script",e.target.value)} style={{...IS,minHeight:"220px",resize:"vertical",lineHeight:"1.8",border:"none",background:"transparent",padding:0}} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"10px",flexWrap:"wrap"}}>
+                        <label style={{...LS,margin:0}}>Publish Schedule & Hashtags</label>
+                        <button onClick={()=>suggestPostTimes(idea)} disabled={generatingTimes===idea.id} style={{background:generatingTimes===idea.id?"#1A2E42":"linear-gradient(135deg,#2C5F8A,#1E3A5F)",border:"none",borderRadius:"6px",color:generatingTimes===idea.id?"#5A7A9A":"#A0C4E0",padding:"5px 14px",fontSize:"11px",cursor:generatingTimes===idea.id?"not-allowed":"pointer"}}>
+                          {generatingTimes===idea.id?"📅 Finding...":"📅 Best Times to Post"}
+                        </button>
+                        <button onClick={()=>generateHashtags(idea)} disabled={generatingHashtags===idea.id} style={{background:generatingHashtags===idea.id?"#1A2E42":"linear-gradient(135deg,#7A5C8A,#5A3A6A)",border:"none",borderRadius:"6px",color:generatingHashtags===idea.id?"#7A6A8A":"#D4A0E8",padding:"5px 14px",fontSize:"11px",cursor:generatingHashtags===idea.id?"not-allowed":"pointer"}}>
+                          {generatingHashtags===idea.id?"#️⃣ Generating...":"#️⃣ Generate Hashtags"}
+                        </button>
+                        <button onClick={()=>setExpandedPublish(expandedPublish===idea.id?null:idea.id)} style={BTN()}>{expandedPublish===idea.id?"Collapse":"View / Edit"}</button>
+                      </div>
+
+                      {expandedPublish!==idea.id&&(
+                        <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                          {PLATFORMS.map(p=>{const pub=idea.publish?.[p];const has=idea.hashtags?.[p];const hasDate=pub?.date&&pub?.time;return(
+                            <div key={p} style={{background:PLATFORM_COLORS[p]+"22",border:"1px solid "+PLATFORM_COLORS[p]+"44",borderRadius:"8px",padding:"6px 12px",fontSize:"11px"}}>
+                              <span style={{color:PLATFORM_COLORS[p],fontWeight:"bold"}}>{p}</span>
+                              <span style={{color:"#9AABB8",marginLeft:"6px"}}>{hasDate?fmtDate(pub.date)+" "+fmtTime(pub.time):"No time set"}</span>
+                              {has?<span style={{color:"#6A8A6A",marginLeft:"6px"}}>· #tags ✅</span>:<span style={{color:"#4A6A8A",marginLeft:"6px"}}>· no tags</span>}
+                            </div>
+                          );})}
+                        </div>
+                      )}
+
+                      {expandedPublish===idea.id&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:"14px",marginTop:"10px"}}>
+                          {PLATFORMS.map(p=>(
+                            <div key={p} style={{background:"#0F1E2E",border:"1px solid "+PLATFORM_COLORS[p]+"44",borderRadius:"10px",padding:"14px 16px"}}>
+                              <div style={{fontSize:"12px",fontWeight:"bold",color:PLATFORM_COLORS[p],letterSpacing:"1px",textTransform:"uppercase",marginBottom:"10px"}}>{p}</div>
+                              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"10px"}}>
+                                <div><label style={LS}>Publish Date</label><input type="date" value={idea.publish?.[p]?.date||""} onChange={e=>updatePublish(idea.id,p,"date",e.target.value)} style={IS} /></div>
+                                <div><label style={LS}>Publish Time (CT)</label><input type="time" value={idea.publish?.[p]?.time||""} onChange={e=>updatePublish(idea.id,p,"time",e.target.value)} style={IS} /></div>
+                              </div>
+                              {idea.publish?.[p]?.reason&&<div style={{fontSize:"11px",color:"#6A8A9A",fontStyle:"italic",marginBottom:"10px"}}>💡 {idea.publish[p].reason}</div>}
+                              <div>
+                                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"5px"}}>
+                                  <label style={{...LS,margin:0}}>Hashtags</label>
+                                  {idea.hashtags?.[p]&&<button onClick={()=>{navigator.clipboard.writeText(idea.hashtags[p]);notify("📋 "+p+" hashtags copied!");}} style={{...BTN(),padding:"3px 8px",fontSize:"10px"}}>Copy</button>}
+                                </div>
+                                <textarea value={idea.hashtags?.[p]||""} onChange={e=>updateHashtags(idea.id,p,e.target.value)} placeholder={p+" hashtags — click Generate or type your own..."} style={{...IS,minHeight:"60px",resize:"vertical",fontSize:"12px"}} />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SCHEDULE TAB */}
+        {activeTab==="schedule"&&(
+          <div style={{maxWidth:"700px"}}>
+            <div style={{background:"#1A2E42",border:"1px solid #2A3F55",borderRadius:"12px",padding:"24px",marginBottom:"20px"}}>
+              <h2 style={{marginBottom:"8px",fontSize:"16px",fontWeight:"normal",color:"#C4A882"}}>📅 Filming & Publishing Schedule</h2>
+              <p style={{fontSize:"13px",color:"#9AABB8",lineHeight:"1.6"}}>Ideas grouped by film date. Each video shows its publish times per platform.</p>
+            </div>
+            {(()=>{
+              const scheduled=ideas.filter(i=>i.filmDate);
+              const byDate={};
+              scheduled.forEach(i=>{if(!byDate[i.filmDate])byDate[i.filmDate]=[];byDate[i.filmDate].push(i);});
+              const dates=Object.keys(byDate).sort();
+              if(!dates.length)return <div style={{textAlign:"center",padding:"40px",color:"#4A6A8A"}}>No film dates set yet.</div>;
+              return dates.map(date=>(
+                <div key={date} style={{background:"#1A2E42",border:"1px solid #2A3F55",borderRadius:"10px",padding:"18px 20px",marginBottom:"12px"}}>
+                  <div style={{fontSize:"13px",color:"#C4A882",letterSpacing:"2px",textTransform:"uppercase",marginBottom:"12px"}}>
+                    🎬 {new Date(date+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})} — {byDate[date].length} video{byDate[date].length!==1?"s":""}
+                  </div>
+                  {byDate[date].map(idea=>(
+                    <div key={idea.id} style={{padding:"10px 0",borderTop:"1px solid #1E3A55"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"6px"}}>
+                        <div style={{width:"8px",height:"8px",borderRadius:"50%",background:STATUS_COLORS[idea.status],flexShrink:0}} />
+                        <div style={{fontSize:"14px",color:"#E8E0D0",flex:1}}>{idea.topic||"Untitled"}</div>
+                        {idea.script?<span style={{fontSize:"10px",color:"#4A8A5A"}}>✅ Script</span>:<span style={{fontSize:"10px",color:"#4A5A6A"}}>⬜ Script</span>}
+                      </div>
+                      <div style={{display:"flex",gap:"6px",flexWrap:"wrap",paddingLeft:"18px"}}>
+                        {PLATFORMS.filter(p=>idea.platforms.includes(p)).map(p=>{const pub=idea.publish?.[p];const hasTime=pub?.date&&pub?.time;return<span key={p} style={{fontSize:"10px",background:PLATFORM_COLORS[p]+"22",border:"1px solid "+PLATFORM_COLORS[p]+"44",borderRadius:"6px",padding:"2px 8px",color:hasTime?PLATFORM_COLORS[p]:"#4A6A8A"}}>{p}{hasTime?" → "+fmtDate(pub.date)+" "+fmtTime(pub.time):" — no time set"}</span>;})}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ));
+            })()}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>
